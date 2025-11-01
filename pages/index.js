@@ -1,6 +1,15 @@
 import { useState } from "react";
 
 export default function Home() {
+  return (
+    <div>
+      <h1>Gift Registry Scraper</h1>
+      <p>This is your homepage running on Vercel 🚀</p>
+    </div>
+  );
+}
+
+export default function Home() {
   const [url, setUrl] = useState("");
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(false);
