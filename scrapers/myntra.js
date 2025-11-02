@@ -1,5 +1,5 @@
 import * as cheerio from "cheerio";
-import { fetchPage } from "../helpers/fetchPage.js";
+import { fetchPage } from "../helpers/fetchpage.js";
 
 export async function scrapeMyntra(url) {
   const data = await fetchPage(url);
