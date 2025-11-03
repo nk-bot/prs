@@ -5,6 +5,7 @@ import { scrapeMyntra } from "./myntra.js";
 
 export async function scrapeProduct(url) {
   if (url.includes("amazon")) return await scrapeAmazon(url);
+  if (url.includes("amzn")) return await scrapeAmazon(url);
   if (url.includes("firstcry")) return await scrapeFirstCry(url);
   if (url.includes("mothercare")) return await scrapeMothercare(url);
   if (url.includes("myntra")) return await scrapeMyntra(url);
