@@ -34,7 +34,7 @@ export default function Home() {
 
   return (
     <div style={{ padding: "40px", fontFamily: "sans-serif" }}>
-      <h1>🛍️ Gift Registry Product Scraper</h1>
+      <h1>Product Scraper</h1>
       <p>Enter an e-commerce product URL to fetch its details.</p>
 
       <div style={{ marginTop: "20px" }}>

@@ -1,72 +1,39 @@
-import * as cheerio from "cheerio";
-import { fetchPage } from "../helpers/fetchpage.js";
+import axios from "axios";
 
-export async function scrapeMyntra(url) {
-  const data = await fetchPage(url);
-  const $ = cheerio.load(data);
-
-  const name =
-    $("h1.pdp-title").text().trim() ||
-    $("meta[property='og:title']").attr("content");
-
-  let price =
-  $("meta[property='product:price:amount']").attr("content") ||
-  $(".price").first().text().trim() ||
-  $(".prod-price").first().text().trim();
-
-// If price is still missing, look for embedded JSON data
-if (!price) {
-  const scripts = $("script[type='application/ld+json']");
-  scripts.each((i, el) => {
-    try {
-      const jsonText = $(el).html();
-      if (jsonText && jsonText.includes("price")) {
-        const jsonData = JSON.parse(jsonText);
-        if (jsonData.offers && jsonData.offers.price) {
-          price = jsonData.offers.price;
-          return false; // break loop
-        }
-      }
-    } catch (e) {
-      // ignore invalid JSON
-    }
-  });
+// Extract Product ID
+function extractProductId(url) {
+  const match = url.match(/\/(\d+)(?:\/buy)?$/);
+  return match ? match[1] : null;
 }
 
-// Fallback
-price = price || "Price not available";
+// Fetch Myntra Product Details using Myntra’s own API
+export async function scrapeMyntra(url) {
+  const productId = extractProductId(url);
+  if (!productId) throw new Error("Invalid Myntra URL — product ID not found");
 
+  const apiUrl = `https://www.myntra.com/gateway/v2/product/${productId}`;
+  const headers = {
+    "User-Agent":
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
+    "Accept-Language": "en-US,en;q=0.9",
+  };
 
-  const availability = data.includes("OUT_OF_STOCK")
-    ? "Out of Stock"
-    : "In Stock";
+  const response = await axios.get(apiUrl, { headers });
+  const data = response.data?.data?.product;
 
-  const description =
-    $("div.pdp-product-description-content").text().trim() ||
-    $("meta[name='description']").attr("content");
+  if (!data) throw new Error("Product data not found from Myntra API");
 
-  const main_image =
-    $("img.pdp-image").first().attr("src") ||
-    $("meta[property='og:image']").attr("content");
-
-  const additional_images = [];
-  $("img.pdp-image").each((i, el) => {
-    const src = $(el).attr("src");
-    if (src) additional_images.push(src);
-  });
-
-  const variants = [];
-  $(".size-buttons-size-button").each((i, el) => {
-    variants.push($(el).text().trim());
-  });
-
+  // Map relevant fields
   return {
-    name,
-    price,
-    availability,
-    description,
-    main_image,
-    additional_images,
-    variants,
+    name: data.name,
+    price: data.price?.discounted || data.price?.mrp,
+    description: data.productDescriptors?.description,
+    availability: data.inventoryInfo?.inventory > 0 ? "In Stock" : "Out of Stock",
+    main_image: data.media?.albums?.[0]?.images?.[0]?.imageURL,
+    additional_images:
+      data.media?.albums?.flatMap((album) =>
+        album.images.map((img) => img.imageURL)
+      ) || [],
+    variants: data.styleOptions?.map((opt) => opt.value) || [],
   };
 }
