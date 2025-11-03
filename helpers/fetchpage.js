@@ -1,5 +1,3 @@
-import axios from "axios";
-
 export async function fetchPage(url) {
   const headers = {
     "User-Agent":
@@ -8,5 +6,7 @@ export async function fetchPage(url) {
   };
 
   const response = await axios.get(url, { headers });
+  console.log("Fetched URL:", url);
+  console.log("Response length:", response.data.length);
   return response.data;
 }
