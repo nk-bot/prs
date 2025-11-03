@@ -1,64 +1,51 @@
 import axios from "axios";
-
-function extractProductId(url) {
-  // Works for .../1234567/buy, .../1234567, or .../buy/1234567
-  const match = url.match(/\/(\d{5,10})(?:\/|$)/);
-  return match ? match[1] : null;
-}
+import * as cheerio from "cheerio";
 
 export async function scrapeMyntra(url) {
-  const productId = extractProductId(url);
-  if (!productId) throw new Error("❌ Invalid Myntra URL — product ID not found");
-
-  const apiUrl = `https://www.myntra.com/gateway/v2/product/${productId}`;
-  console.log("🟢 Fetching:", apiUrl);
-
   const headers = {
     "User-Agent":
       "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
     "Accept-Language": "en-US,en;q=0.9",
   };
 
-  const response = await axios.get(apiUrl, { headers });
+  const response = await axios.get(url, { headers });
+  const $ = cheerio.load(response.data);
 
-  // Try all possible response shapes
-  const data =
-    response.data?.data?.product ||
-    response.data?.data?.productDetails ||
-    response.data?.style ||
-    response.data?.data ||
-    response.data;
+  const name =
+    $("h1.pdp-title").text().trim() ||
+    $("meta[property='og:title']").attr("content");
 
-  if (!data) throw new Error("⚠️ Product data not found from Myntra API");
+  let price =
+    $("meta[property='product:price:amount']").attr("content") ||
+    $(".pdp-price").text().trim() ||
+    $(".price").first().text().trim();
 
-  // Extract key fields
+  if (!price) {
+    const scripts = $("script[type='application/ld+json']");
+    scripts.each((_, el) => {
+      try {
+        const json = JSON.parse($(el).html());
+        if (json.offers?.price) {
+          price = json.offers.price;
+          return false;
+        }
+      } catch {}
+    });
+  }
+
+  const main_image =
+    $("meta[property='og:image']").attr("content") ||
+    $("img.pdp-image").first().attr("src");
+
+  const description =
+    $("div.pdp-product-description-content").text().trim() ||
+    $("meta[name='description']").attr("content");
+
   return {
-    name: data.name,
-    brand: data.brand?.name,
-    mrp: data.mrp,
-    discounted_price:
-      data.sizes?.[0]?.sizeSellerData?.[0]?.discountedPrice || data.mrp,
-    description:
-      data.productDetails?.[0]?.description ||
-      data.descriptors?.[0]?.description,
-    countryOfOrigin: data.countryOfOrigin,
-    availability: data.flags?.outOfStock ? "Out of Stock" : "In Stock",
-    main_image: data.media?.albums?.[0]?.images?.[0]?.imageURL,
-    all_images:
-      data.media?.albums
-        ?.flatMap((album) => album.images.map((img) => img.imageURL))
-        ?.filter(Boolean) || [],
-    sizes: data.sizes?.map((s) => ({
-      label: s.label,
-      available: s.available,
-      price:
-        s.sizeSellerData?.[0]?.discountedPrice ||
-        s.sizeSellerData?.[0]?.mrp ||
-        data.mrp,
-    })),
-    offers: data.offers?.map((o) => ({
-      title: o.title,
-      description: o.description,
-    })),
+    name,
+    price: price || "N/A",
+    description,
+    main_image,
+    url,
   };
 }
