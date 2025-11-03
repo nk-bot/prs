@@ -1,6 +1,21 @@
 import puppeteer from "puppeteer-extra";
 import StealthPlugin from "puppeteer-extra-plugin-stealth";
 import fs from "fs";
+import StealthPlugin from "puppeteer-extra-plugin-stealth";
+import { addExtra } from "puppeteer-extra";
+import puppeteer from "puppeteer-core";
+import chromium from "@sparticuz/chromium"; // lightweight Chromium build for Vercel
+
+const puppeteerExtra = addExtra(puppeteer);
+puppeteerExtra.use(StealthPlugin());
+
+export async function scrapeFirstCry(url) {
+  const browser = await puppeteerExtra.launch({
+    args: chromium.args,
+    executablePath: await chromium.executablePath(),
+    headless: chromium.headless,
+  });
+
 
 
 puppeteer.use(StealthPlugin());
@@ -100,4 +115,5 @@ export async function scrapeFirstCry(url) {
   } finally {
     if (browser) await browser.close();
   }
+}
 }
