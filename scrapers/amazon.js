@@ -1,5 +1,7 @@
 import axios from "axios";
 import * as cheerio from "cheerio";
+import { fetchPage } from "../helpers/fetchpage.js";
+
 
 export async function scrapeAmazon(url) {
   const { data } = await axios.get(url, {
