@@ -1,3 +1,5 @@
+import axios from "axios";
+
 export async function fetchPage(url) {
   const headers = {
     "User-Agent":
