@@ -1,101 +1,47 @@
 import { useState } from "react";
 
 export default function Home() {
-  const [url, setUrl] = useState("");
-  const [product, setProduct] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [file, setFile] = useState(null);
+  const [message, setMessage] = useState("");
 
-  const handleScrape = async () => {
-    setLoading(true);
-    setError("");
-    setProduct(null);
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!file) {
+      alert("Please select a CSV file first!");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    setMessage("Uploading and scraping... ⏳");
 
     try {
       const res = await fetch("/api/scrape", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url }),
+        body: formData,
       });
-
       const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || "Failed to fetch product details");
-      }
-
-      setProduct(data.product);
+      setMessage(data.message || data.error);
     } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
+      setMessage("❌ Error uploading file: " + err.message);
     }
   };
 
   return (
-    <div style={{ padding: "40px", fontFamily: "sans-serif" }}>
-      <h1>Product Scraper</h1>
-      <p>Enter an e-commerce product URL to fetch its details.</p>
-
-      <div style={{ marginTop: "20px" }}>
+    <div style={{ padding: "2rem" }}>
+      <h1>🧠 Bulk Scraper</h1>
+      <form onSubmit={handleSubmit}>
         <input
-          type="text"
-          placeholder="Enter product URL"
-          value={url}
-          onChange={(e) => setUrl(e.target.value)}
-          style={{
-            width: "400px",
-            padding: "8px",
-            marginRight: "10px",
-            border: "1px solid #ccc",
-            borderRadius: "4px",
-          }}
+          type="file"
+          accept=".csv"
+          onChange={(e) => setFile(e.target.files[0])}
         />
-        <button
-          onClick={handleScrape}
-          disabled={loading || !url}
-          style={{
-            padding: "8px 16px",
-            backgroundColor: "#0070f3",
-            color: "#fff",
-            border: "none",
-            borderRadius: "4px",
-            cursor: "pointer",
-          }}
-        >
-          {loading ? "Fetching..." : "Scrape Product"}
+        <button type="submit" style={{ marginLeft: "1rem" }}>
+          Start Scraping
         </button>
-      </div>
-
-      {error && (
-        <p style={{ color: "red", marginTop: "20px" }}>
-          ⚠️ {error}
-        </p>
-      )}
-
-      {product && (
-        <div
-          style={{
-            marginTop: "40px",
-            borderTop: "1px solid #ddd",
-            paddingTop: "20px",
-          }}
-        >
-          <h2>{product.name}</h2>
-          <p><strong>Price:</strong> {product.price}</p>
-          <p><strong>Availability:</strong> {product.availability}</p>
-          <p><strong>Description:</strong> {product.description}</p>
-
-          {product.main_image && (
-            <img
-              src={product.main_image}
-              alt={product.name}
-              width="200"
-              style={{ marginTop: "10px", borderRadius: "8px" }}
-            />
-          )}
-        </div>
-      )}
+      </form>
+      <p style={{ marginTop: "1rem" }}>{message}</p>
     </div>
   );
 }

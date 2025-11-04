@@ -1,72 +1,44 @@
+import axios from "axios";
 import * as cheerio from "cheerio";
 import { fetchPage } from "../helpers/fetchpage.js";
 
 export async function scrapeMothercare(url) {
-  const data = await fetchPage(url);
-  const $ = cheerio.load(data);
+  const headers = {
+    "User-Agent":
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
+    "Accept-Language": "en-US,en;q=0.9",
+  };
+
+  const response = await axios.get(url, { headers });
+  const $ = cheerio.load(response.data);
 
   const name =
-    $("h1").text().trim() ||
+    $("h1.pdp-title").text().trim() ||
     $("meta[property='og:title']").attr("content");
 
-  let price =
-  $("meta[property='product:price:amount']").attr("content") ||
-  $(".price").first().text().trim() ||
-  $(".prod-price").first().text().trim();
+  const priceText = $("span.new-price.mc-regular").first().text().trim();
+  console.log("Raw price text:", priceText);
 
-// If price is still missing, look for embedded JSON data
-if (!price) {
-  const scripts = $("script[type='application/ld+json']");
-  scripts.each((i, el) => {
-    try {
-      const jsonText = $(el).html();
-      if (jsonText && jsonText.includes("price")) {
-        const jsonData = JSON.parse(jsonText);
-        if (jsonData.offers && jsonData.offers.price) {
-          price = jsonData.offers.price;
-          return false; // break loop
-        }
-      }
-    } catch (e) {
-      // ignore invalid JSON
-    }
-  });
-}
+  let price = null;
+  if (priceText) {
+    const numeric = priceText.replace(/[₹,\s]/g, ""); // e.g. "₹559" → "559"
+    price = parseFloat(numeric);
+  }
 
-// Fallback
-price = price || "Price not available";
-
-
-  const availability =
-    $(".availability").text().trim() ||
-    ($(".out-of-stock").length ? "Out of Stock" : "In Stock");
-
-  const description =
-    $(".product-description").text().trim() ||
-    $("meta[name='description']").attr("content");
 
   const main_image =
-    $("img.primary-image").attr("src") ||
-    $("meta[property='og:image']").attr("content");
+    $("meta[property='og:image']").attr("content") ||
+    $("img.pdp-image").first().attr("src");
 
-  const additional_images = [];
-  $(".product-thumbnails img").each((i, el) => {
-    const src = $(el).attr("src");
-    if (src) additional_images.push(src);
-  });
-
-  const variants = [];
-  $(".variant-size li, .variant-color li").each((i, el) => {
-    variants.push($(el).text().trim());
-  });
+  const description =
+    $("div.pdp-product-description-content").text().trim() ||
+    $("meta[name='description']").attr("content");
 
   return {
     name,
     price,
-    availability,
     description,
     main_image,
-    additional_images,
-    variants,
+    url,
   };
 }
