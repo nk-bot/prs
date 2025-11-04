@@ -1,19 +1,57 @@
-import axios from "axios";
+import puppeteer from "puppeteer-core";
+import chromium from "@sparticuz/chromium";
 
 export async function scrapeFirstCry(url) {
-  const productId = url.match(/\/(\d+)\/product-detail/)?.[1];
-  if (!productId) return null;
+  console.log("🔍 Launching headless browser for:", url);
 
-  const apiUrl = `https://api.firstcry.com/product/getproductdetails?productid=${productId}`;
-  const { data } = await axios.get(apiUrl);
+  const executablePath = await chromium.executablePath();
 
-  if (!data?.product) return null;
+  const browser = await puppeteer.launch({
+    args: chromium.args,
+    defaultViewport: chromium.defaultViewport,
+    executablePath,
+    headless: chromium.headless,
+  });
 
-  const product = data.product;
-  const price = product.discountedprice || product.price || null;
-  const name = product.productname || null;
-  const image = product.productimage || null;
-  const description = product.longdescription || product.shortdescription || "";
+  const page = await browser.newPage();
+  await page.goto(url, { waitUntil: "networkidle2", timeout: 60000 });
 
-  return { name, price, image, description, url, site: "FirstCry" };
+  const data = await page.evaluate(() => {
+    const name =
+      document.querySelector("h1")?.innerText.trim() ||
+      document.querySelector("meta[property='og:title']")?.content ||
+      null;
+
+    const priceText =
+      document.querySelector(".th-discounted-price .prod-price")?.textContent.trim() ||
+      document.querySelector(".prod-price")?.textContent.trim() ||
+      document.querySelector(".newmrp")?.textContent.trim() ||
+      null;
+
+    let price = null;
+    if (priceText) {
+      const numeric = priceText.replace(/[₹,\s]/g, "").trim();
+      price = parseFloat(numeric) || null;
+    }
+
+    const image =
+      document.querySelector("meta[property='og:image']")?.content ||
+      document.querySelector("img")?.src ||
+      null;
+
+    const description =
+      document.querySelector(".pdp-product-description-content")?.innerText.trim() ||
+      document.querySelector("meta[name='description']")?.content ||
+      "";
+
+    return { name, price, image, description };
+  });
+
+  await browser.close();
+
+  if (!data.name || !data.price) {
+    console.warn("⚠️ Missing data for URL:", url);
+  }
+
+  return { ...data, url, site: "FirstCry" };
 }

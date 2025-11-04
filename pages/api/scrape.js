@@ -2,7 +2,7 @@ import Papa from "papaparse";
 import { supabase } from "../../supabaseClient.js";
 import formidable from "formidable";
 import fs from "fs";
-import { scrapeFirstCry } from "../../scrapers/firstcry.js";
+import { scrapeFirstCry } from "../../scrapers/fc.js";
 import { scrapeMothercare } from "../../scrapers/mothercare.js";
 import { scrapeMyntra } from "../../scrapers/myntra.js";
 import { scrapeAmazon } from "../../scrapers/amazon.js";
