@@ -4,6 +4,7 @@ import chromium from "@sparticuz/chromium";
 export async function scrapeFirstCry(url) {
   console.log("🔍 Launching headless browser for:", url);
 
+  // Get path to Vercel-compatible Chromium binary
   const executablePath = await chromium.executablePath();
 
   const browser = await puppeteer.launch({
@@ -14,7 +15,7 @@ export async function scrapeFirstCry(url) {
   });
 
   const page = await browser.newPage();
-  await page.goto(url, { waitUntil: "networkidle2", timeout: 60000 });
+  await page.goto(url, { waitUntil: "domcontentloaded", timeout: 60000 });
 
   const data = await page.evaluate(() => {
     const name =
