@@ -1,5 +1,7 @@
 import chromium from "@sparticuz/chromium";
 import puppeteer from "puppeteer-core";
+import StealthPlugin from "puppeteer-extra-plugin-stealth";
+
 
 export async function scrapeFirstCry(url) {
   console.log("🔍 Launching headless browser for:", url);
