@@ -32,6 +32,10 @@ export async function scrapeAmazon(url) {
       .each((_, o) => options.push($(o).text().trim()));
     variants.push({ type, options });
   });
+  console.log("name:", name);  
+  console.log("price", price);
+  console.log("description :", description);
+  console.log("image", main_image);
 
   return {
     site: "Amazon",

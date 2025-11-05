@@ -2,7 +2,7 @@ import Papa from "papaparse";
 import { supabase } from "../../supabaseClient.js";
 import formidable from "formidable";
 import fs from "fs";
-import { scrapeFirstCry } from "../../scrapers/fc.js";
+import { scrapeFirstCry } from "../../scrapers/firstcry.js";
 import { scrapeMothercare } from "../../scrapers/mothercare.js";
 import { scrapeMyntra } from "../../scrapers/myntra.js";
 import { scrapeAmazon } from "../../scrapers/amazon.js";
@@ -44,15 +44,18 @@ export default async function handler(req, res) {
       let scrapedData = null;
 
       try {
-        if (url.includes("firstcry.com")) {
+        if (url.includes("firstcry")) {
           scrapedData = await scrapeFirstCry(url);
-        } else if (url.includes("mothercare.in")) {
+        } else if (url.includes("mothercare")) {
           scrapedData = await scrapeMothercare(url);
-        } else if (url.includes("amazon.in")) {
+        } else if (url.includes("amazon")) {
           scrapedData = await scrapeAmazon(url);
-        } else if (url.includes("myntra.com")) {
+        } else if (url.includes("myntra")) {
           scrapedData = await scrapeMyntra(url);
-        } else {
+        } else if (url.includes("amzn")) {
+          scrapedData = await scrapeAmazon(url);
+        } 
+	  else {
           console.log("❌ No scraper available for this URL:", url);
           continue; // skip unknown site
         }
